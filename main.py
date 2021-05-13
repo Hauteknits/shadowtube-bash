@@ -17,6 +17,7 @@ try:
 	from requests import get
 	from stem import Signal
 	from stem.connection import IncorrectPassword
+	from stem import SocketError
 	import lxml.html
 	import requests
 	import socket
@@ -29,24 +30,37 @@ YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={youtubeId}"
 YOUTUBE_COMMENTS_AJAX_URL = "https://www.youtube.com/comment_service_ajax"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
 
+### Global Variables/Settings
+
+useControlPass = False
+socksPort = 9050
+controlPort = 9051
+controlPass = ""
+
 ### Tor
 
-password = ""
+
 
 def get_tor_session():
 	session = requests.Session()
-	session.proxies = {"http": "socks5://localhost:9150", "https": "socks5://localhost:9150"}
+	session.proxies = {"http": "socks5://localhost:"+str(socksPort), "https": "socks5://localhost:"+str(socksPort)}
 	return session
 
 def rotate_connection():
 	time.sleep(10)
 	try:
-		with Controller.from_port(port = 9151) as c:
-			c.authenticate(password=password)
-			c.signal(Signal.NEWNYM)
+		with Controller.from_port(port = 9051) as c:
+			if useControlPass:
+				c.authenticate(password = controlPass)
+				c.signal(Signal.NEWNYM)
+			else:
+				c.authenticate()
+				c.signal(Signal.NEWNYM)
 	except IncorrectPassword:
 		print("Error: Failed to authenticate. Tor Control Port Password Incorrect")
 		sys.exit(1)
+	except SocketError:
+		print("Error: Connection Refused, make sure you enabled Cookie Authentication, as well as your control port")
 try:
 	get_tor_session().get("http://icanhazip.com").text
 except IOError:
@@ -261,10 +275,16 @@ def search_dict(partial, search_key):
 			for value in current_item:
 				stack.append(value)
 
-### Menu
+### Menu/Init
+settingsDict = None
+with open('settings.json') as f:
+	settingsDict = json.load(f);
 
-print("Enter your Tor Control Port password: ")
-password = input()
+useControlPass = settingsDict["use_control_pass"]
+controlPass = settingsDict["control_pass"]
+controlPort = settingsDict["control_port"]
+socksPort = settingsDict["socks_port"]
+	
 print("\nShadowTube\n\n1. Video\n2. Comments\n3. Dicussion/Community posts (under development)\n")
 while True:
 	try:
