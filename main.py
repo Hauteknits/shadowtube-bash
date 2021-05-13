@@ -61,6 +61,7 @@ def rotate_connection():
 		sys.exit(1)
 	except SocketError:
 		print("Error: Connection Refused, make sure you enabled Cookie Authentication, as well as your control port")
+		sys.exit(1)
 try:
 	get_tor_session().get("http://icanhazip.com").text
 except IOError:
