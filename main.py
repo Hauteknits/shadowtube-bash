@@ -322,7 +322,8 @@ elif choice == 2:
 					io.open("Google - My Activity.html", "r")
 					break
 				except IOError:
-					continue
+					print("Error: File does not exist. Please download the file listed above and place it in the project directory. Exiting")
+					Sys.exit(1)
 		except ValueError:
 			continue
 	comments()
